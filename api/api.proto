@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auction;
 
-option go_package = "github.com/your_username/your_repo/api"; // Replace with your actual package path
+option go_package = "https://github.com/davrepo/DS_assignment_5_election/api"; // Replace with your actual package path
 
 // The AuctionService service defines the RPC methods that the client can call.
 service AuctionService {
