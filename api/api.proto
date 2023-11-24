@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package auction;
+
+option go_package = "github.com/your_username/your_repo/api"; // Replace with your actual package path
+
+// The AuctionService service defines the RPC methods that the client can call.
+service AuctionService {
+  rpc Bid(BidRequest) returns (BidResponse) {}
+  rpc Result(ResultRequest) returns (ResultResponse) {}
+}
+
+// BidRequest is the request message for a bid.
+message BidRequest { int32 amount = 1; }
+
+// BidResponse is the response message for a bid.
+message BidResponse {
+  string status = 1; // e.g., "success", "fail", or "exception"
+}
+
+// ResultRequest is the request message for querying the auction result.
+message ResultRequest {
+  // This can be empty as we don't need any input for the result query.
+}
+
+// ResultResponse is the response message for the auction result.
+message ResultResponse {
+  string outcome = 1; // e.g., highest bid amount or the winner's details
+}
