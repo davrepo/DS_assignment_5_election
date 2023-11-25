@@ -188,31 +188,7 @@ ______________________________________________________
     **>>> WELCOME TO AUCTIONHOUSE <<<**
 ======================================================
 Here you can bid on different items.
-A certain amount of time is set off for clients to bid on an item.
-The time on the items are NOT displayed to the clients, so if you want to bid do it fast.
-
-INPUTS
-----------------------------------------------------------------------------------------------------------------
-	Bidding on an item: 
-		To bid on an item just write the amount in the terminal, followed by enter, the bid must be a valid int.
-
-	Information about current item:
-		To ask the auctioneer what item you are bidding on and what the highest bid is please write:
-			query
-		in the terminal, followed by enter.
-
-	Quitting:
-		To quit the auction please write:
-			quit
-		in the terminal, followed by enter.
-
-	Help:
-		To get the input explaination again please write:
-			help
-		in the terminal, followed by enter.
-------------------------------------------------------------------------------------------------------------------
-
-`
+` + Instrc()
 }
 
 func Quit(client *AuctionClient) {
@@ -225,7 +201,12 @@ func Quit(client *AuctionClient) {
 }
 
 func Help() {
-	Output(`
+	Output(Instrc())
+}
+
+func Instrc() string {
+
+	return `
 	This is the Auction House, here you can bid on different items.
 	A certain amount of time is set off for clients to bid on an item.
 	The time on the items are NOT displayed to the clients, so if you wanna bid do it fast.
@@ -234,17 +215,24 @@ func Help() {
 	----------------------------------------------------------------------------------------------------------------
 		Bidding on an item: 
 			To bid on an item just write the amount in the terminal, followed by enter, the bid must be a valid int.
-
+			     bid <bid amount>
 		Information about current item:
 			To ask the auctioneer what item you are bidding on and what the highest bid is please write:
-				r
+				query
 			in the terminal, followed by enter.
 
 		Quitting:
 			To quit the auction please write:
-				q
+				quit
 			in the terminal, followed by enter.
-		`)
+
+		Help:
+			To get the input explaination again please write:
+				help
+			in the terminal, followed by enter.
+	------------------------------------------------------------------------------------------------------------------
+
+		`
 }
 
 func Output(input string) {
