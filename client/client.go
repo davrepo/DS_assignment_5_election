@@ -41,7 +41,7 @@ func activeChat(client protos.AuctionhouseServiceClient) {
 	for active {
 		prompt := promptui.Select{
 			Label: "Select Action",
-			Items: []string{"bid", "leave"},
+			Items: []string{"bid", "query","leave"},
 		}
 		_, input, err := prompt.Run()
 		if err != nil {
@@ -72,6 +72,8 @@ func activeChat(client protos.AuctionhouseServiceClient) {
 				bid(client, result)
 
 			}
+		} else if input == "query" {
+			result(client)
 		} else if input == "leave" {
 			active = false
 		}
@@ -92,7 +94,24 @@ func bid(client protos.AuctionhouseServiceClient, amount int32) {
 		log.Fatalf("could not place bid: %v", err)
 	}
 
-	log.Print(res)
+	log.Print("Your bid status: ", res.Status)
+	log.Print("Highest bid: ", res.HighestBid)
+
+}
+
+func result(client protos.AuctionhouseServiceClient) {
+	// Your code for the bid function goes here
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	res, err := client.Result(ctx, &protos.QueryResult{
+	})
+	if err != nil {
+		log.Fatalf("could not place bid: %v", err)
+	}
+
+	log.Print("Auction status: ", res.Status)
+	log.Print("Current highest bid: ", res.HighestBid)
 
 }
 

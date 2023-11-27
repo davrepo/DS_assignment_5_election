@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-
 	logger "github.com/davrepo/DS_assignment_5_election/logger"
 	protos "github.com/davrepo/DS_assignment_5_election/proto"
 
@@ -16,6 +15,8 @@ type Server struct {
 	protos.UnimplementedAuctionhouseServiceServer
 	clientBids map[int32]int32 
 	currentHighestBidsAmount int32
+	isAuctionEnded bool
+	totalBids int32
 }
 
 
@@ -25,6 +26,8 @@ func Start(id int32, po int32) {
 
 	s := &Server{
 		clientBids: make(map[int32]int32),
+		isAuctionEnded: false,
+		totalBids: 0,
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -48,8 +51,18 @@ func Start(id int32, po int32) {
 	<-bl
 }
 
+
 func (s *Server) Bid(ctx context.Context, req *protos.BidRequest) (*protos.StatusOfBid, error) {
 	
+	if s.totalBids == 5 {
+		s.isAuctionEnded = true
+		return &protos.StatusOfBid{
+			Status:     protos.Status_AUCTION_ENDED,
+			HighestBid: s.currentHighestBidsAmount,
+		}, nil
+	} else {
+	s.totalBids += 1
+
 	s.clientBids[req.ClientId] = req.Amount;
 
 	if req.Amount > s.currentHighestBidsAmount {
@@ -57,21 +70,22 @@ func (s *Server) Bid(ctx context.Context, req *protos.BidRequest) (*protos.Statu
 
 		return &protos.StatusOfBid{
 			Status:     protos.Status_NOW_HIGHEST_BIDDER,
-			HighestBid: req.Amount,
+			HighestBid: s.currentHighestBidsAmount,
 		}, nil
 
 	} else if req.Amount < s.currentHighestBidsAmount {
 		return &protos.StatusOfBid{
 			Status:     protos.Status_TOO_LOW_BID,
-			HighestBid: req.Amount,
+			HighestBid: s.currentHighestBidsAmount,
 		}, nil
 	} else {
 		return &protos.StatusOfBid{
 			Status:     protos.Status_EXCEPTION,
-			HighestBid: req.Amount,
+			HighestBid: s.currentHighestBidsAmount,
 		}, nil
 
 	}
+}
 
 }
 
@@ -98,9 +112,18 @@ func (s *Server) Bid(ctx context.Context, req *protos.BidRequest) (*protos.Statu
 // When time has runned out : brodcast who the winner is
 func (s *Server) Result(ctx context.Context, in *protos.QueryResult) (*protos.ResponseToQuery, error) {
 
-	return &protos.ResponseToQuery{}, nil
+	status := protos.Status_AUCTION_ACTIVE
+	if s.isAuctionEnded {
+		status = protos.Status_AUCTION_ENDED
+	}
+
+	return &protos.ResponseToQuery{
+		Status: status,
+		HighestBid: s.currentHighestBidsAmount,
+	}, nil
 }
 
 func Output(input string) {
 	log.Println(input)
 }
+

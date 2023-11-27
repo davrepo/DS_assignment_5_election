@@ -20,14 +20,12 @@ message BidRequest {
 
 // Highest bidder info - highest bid, and bidder
 message ResponseToQuery {
-  string auctionStatusMessage = 1;
+  Status status = 1;
   int32 highestBid = 2;
-  int32 highestBidderID = 3;
-  string item = 4;
 }
 
 // Message for prompting asking for highest bidder
-message QueryResult { int32 clientId = 1; }
+message QueryResult {}
 
 // Was bid successful?
 message StatusOfBid {
@@ -39,6 +37,8 @@ enum Status {
   NOW_HIGHEST_BIDDER = 0;
   TOO_LOW_BID = 1;
   EXCEPTION = 2;
+  AUCTION_ENDED = 3;
+  AUCTION_ACTIVE = 4;
 }
 
 service AuctionhouseService {
