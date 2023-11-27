@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"strings"
@@ -236,7 +237,7 @@ func Instrc() string {
 }
 
 func Output(input string) {
-	fmt.Println(input)
+	log.Println(input)
 }
 
 func setupClient(port string) *AuctionClient {

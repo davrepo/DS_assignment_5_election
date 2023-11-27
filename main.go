@@ -13,13 +13,9 @@ func main() {
 	logger.ClearLog("log")
 	logger.LogFileInit("main")
 
-	numberOfReplicas, _ := strconv.Atoi(os.Args[1])
-	makePortListForFrontEnd(numberOfReplicas)
+	replicaNumber, _ := strconv.Atoi(os.Args[1])
 
-	for i := 1; i <= numberOfReplicas; i++ {
-		number := int32(i)
-		go replica.Start(number, (3000 + number))
-	}
+	go replica.Start(int32(replicaNumber), (3000 + int32(replicaNumber)))
 
 	bl := make(chan bool)
 	<-bl

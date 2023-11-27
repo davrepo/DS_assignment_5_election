@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"sync"
 
@@ -149,5 +150,5 @@ func (s *Server) receiveQueryForResultAndSendToClient(srv protos.AuctionhouseSer
 }
 
 func Output(input string) {
-	fmt.Println(input)
+	log.Println(input)
 }
