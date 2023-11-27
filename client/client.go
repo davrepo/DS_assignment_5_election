@@ -6,7 +6,11 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
+
+	"github.com/davrepo/DS_assignment_5_election/database"
+	server "github.com/davrepo/DS_assignment_5_election/replicamanager"
 
 	protos "github.com/davrepo/DS_assignment_5_election/proto"
 	"github.com/manifoldco/promptui"
@@ -14,25 +18,32 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+var mu sync.Mutex
+
 func main() {
 	log.Print(os.Args[1])
 	port := fmt.Sprintf(":%v", os.Args[1])
 
 	Output(WelcomeMsg())
-	conn, err := grpc.Dial(port, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
 
-	//--------------------
-	client := protos.NewAuctionhouseServiceClient(conn)
-
-	activeChat(client)
+	replicaConnect(port)
 
 	//______________________
 
 	bl := make(chan bool)
 	<-bl
+}
+
+func connectServer(port string) (*grpc.ClientConn, error) {
+	conn, err := grpc.Dial(port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	if err != nil {
+		return nil, err
+	}
+
+	//--------------------
+	return conn, nil
+
 }
 
 func activeChat(client protos.AuctionhouseServiceClient) {
@@ -41,7 +52,7 @@ func activeChat(client protos.AuctionhouseServiceClient) {
 	for active {
 		prompt := promptui.Select{
 			Label: "Select Action",
-			Items: []string{"bid", "query","leave"},
+			Items: []string{"bid", "query", "leave"},
 		}
 		_, input, err := prompt.Run()
 		if err != nil {
@@ -76,6 +87,8 @@ func activeChat(client protos.AuctionhouseServiceClient) {
 			result(client)
 		} else if input == "leave" {
 			active = false
+			database.TruncateCSV()
+			os.Exit(3)
 		}
 
 	}
@@ -91,7 +104,8 @@ func bid(client protos.AuctionhouseServiceClient, amount int32) {
 		Amount:   amount,
 	})
 	if err != nil {
-		log.Fatalf("could not place bid: %v", err)
+		// if the bid fails try another replica
+		replicaConnect("")
 	}
 
 	log.Print("Your bid status: ", res.Status)
@@ -99,20 +113,21 @@ func bid(client protos.AuctionhouseServiceClient, amount int32) {
 
 }
 
-func result(client protos.AuctionhouseServiceClient) {
+func result(client protos.AuctionhouseServiceClient) (*protos.ResponseToQuery, error) {
 	// Your code for the bid function goes here
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	res, err := client.Result(ctx, &protos.QueryResult{
-	})
+	res, err := client.Result(ctx, &protos.QueryResult{})
 	if err != nil {
-		log.Fatalf("could not place bid: %v", err)
+		log.Printf("could not get")
+		return nil, err
 	}
 
 	log.Print("Auction status: ", res.Status)
 	log.Print("Current highest bid: ", res.HighestBid)
 
+	return res, nil
 }
 
 func WelcomeMsg() string {
@@ -127,6 +142,37 @@ Here you can bid on different items.
 
 func Help() {
 	Output(Instrc())
+}
+
+func replicaConnect(primaryPort string) {
+	ports, err := server.ReadPorts()
+	if err != nil {
+		print(err)
+	}
+	if primaryPort != "" {
+		conn, err := connectServer(primaryPort)
+		client := protos.NewAuctionhouseServiceClient(conn)
+		activeChat(client)
+		if err != nil {
+			log.Printf("error connecting")
+		}
+
+	} else {
+		for _, v := range ports {
+			if isServerLive(v) {
+				log.Printf(v)
+				conn, err := connectServer(v)
+				client := protos.NewAuctionhouseServiceClient(conn)
+				if err != nil {
+					log.Printf("error connecting")
+				}
+				activeChat(client)
+			} else {
+				log.Printf("trying another")
+			}
+
+		}
+	}
 }
 
 func Instrc() string {
@@ -160,8 +206,31 @@ func Instrc() string {
 		`
 }
 
+// this method is used to ping the server at see if it is active if not try next
+func isServerLive(port string) bool {
+	mu.Lock()
+	defer mu.Unlock()
+	// Connect to the server
+	conn, err := connectServer(port)
+	if err != nil {
+		log.Printf("could no connect")
+	}
+	defer conn.Close()
 
+	// Create a new client
+	client := protos.NewAuctionhouseServiceClient(conn)
 
+	// Call a simple method from the service
+	_, err = result(client)
+	if err != nil {
+		// Handle the error
+		log.Printf("The server is on " + port + " is down")
+		return false
+	}
+
+	// If the method returns successfully, the server is live
+	return true
+}
 
 func Output(input string) {
 	log.Println(input)

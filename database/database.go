@@ -34,3 +34,18 @@ func WriteToCSV(data string) error {
 
 	return nil
 }
+
+func TruncateCSV() error {
+	filePath := "database/database/data.csv"
+
+	// Open the CSV file in write mode
+	file, err := os.OpenFile(filePath, os.O_TRUNC|os.O_WRONLY, 0644)
+
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	file.Truncate(0)
+
+	return nil
+}

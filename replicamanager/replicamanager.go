@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"strings"
 
 	"github.com/davrepo/DS_assignment_5_election/database"
 	logger "github.com/davrepo/DS_assignment_5_election/logger"
@@ -23,6 +25,7 @@ type Server struct {
 
 func Start(id int32, po int32) {
 	port := po
+	print(port)
 	logger.LogFileInit("replica", id)
 
 	s := &Server{
@@ -31,7 +34,7 @@ func Start(id int32, po int32) {
 		totalBids:      0,
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", po))
 	if err != nil {
 		logger.InfoLogger.Printf(fmt.Sprintf("FATAL: Connection unable to establish. Failed to listen: %v", err))
 	}
@@ -104,4 +107,19 @@ func (s *Server) Result(ctx context.Context, in *protos.QueryResult) (*protos.Re
 
 func Output(input string) {
 	log.Println(input)
+}
+
+func ReadPorts() ([]string, error) {
+	data, err := os.ReadFile("/home/hanan/DS_assignment_5_election/replicamanager/portlist/listOfReplicaPorts.txt")
+	if err != nil {
+		return nil, err
+	}
+
+	var ports []string
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		ports = append(ports, line)
+	}
+
+	return ports, nil
 }
