@@ -9,18 +9,6 @@ package proto;
 
 option go_package = "./proto";
 
-service AuctionhouseService {
-  // result: send stream of qmgs bc client can ask at any point of time
-  // what the highest bid in the round is.
-  // prints winner when time runs out to all clients.
-  rpc Result(stream QueryResult) returns (stream ResponseToQuery) {}
-
-  // First call to Bid registers the auctioners
-  // Bidders can bid several times, but a bid must be higher than the previous
-  // one(s)
-  rpc Bid(stream BidRequest) returns (stream StatusOfBid) {
-  } // Broadcast -- subcribe - server -> client via msgQueue
-}
 
 // ack =  given a bid, returns an outcome among fail, success or exception
 
@@ -32,14 +20,12 @@ message BidRequest {
 
 // Highest bidder info - highest bid, and bidder
 message ResponseToQuery {
-  string auctionStatusMessage = 1;
+  Status status = 1;
   int32 highestBid = 2;
-  int32 highestBidderID = 3;
-  string item = 4;
 }
 
 // Message for prompting asking for highest bidder
-message QueryResult { int32 clientId = 1; }
+message QueryResult {}
 
 // Was bid successful?
 message StatusOfBid {
@@ -51,4 +37,19 @@ enum Status {
   NOW_HIGHEST_BIDDER = 0;
   TOO_LOW_BID = 1;
   EXCEPTION = 2;
+  AUCTION_ENDED = 3;
+  AUCTION_ACTIVE = 4;
+}
+
+service AuctionhouseService {
+  // result: send stream of qmgs bc client can ask at any point of time
+  // what the highest bid in the round is.
+  // prints winner when time runs out to all clients.
+  rpc Result( QueryResult) returns (ResponseToQuery) {}
+
+  // First call to Bid registers the auctioners
+  // Bidders can bid several times, but a bid must be higher than the previous
+  // one(s)
+  rpc Bid( BidRequest) returns (StatusOfBid) {
+  } // Broadcast -- subcribe - server -> client via msgQueue
 }
