@@ -44,7 +44,16 @@ enum Status {
   AUCTION_ACTIVE = 4;
 }
 
+// send data to other server - auctionhouse
+message SendDataRequest {
+    int64 amount = 1;
+    string backupIds = 2;
+}
 
+message SendDataResponse {
+    int64 amount = 1;
+    string backupIds = 2;
+}
 
 service AuctionhouseService {
   // result: send stream of qmgs bc client can ask at any point of time
@@ -56,5 +65,8 @@ service AuctionhouseService {
   // Bidders can bid several times, but a bid must be higher than the previous
   // one(s)
   rpc Bid( BidRequest) returns (StatusOfBid) {
+  }
+  // Send data to other server
+  rpc SendData(stream SendDataRequest) returns (stream SendDataResponse) {
   } // Broadcast -- subcribe - server -> client via msgQueue
 }

@@ -24,8 +24,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AuctionhouseService_Result_FullMethodName = "/proto.AuctionhouseService/Result"
-	AuctionhouseService_Bid_FullMethodName    = "/proto.AuctionhouseService/Bid"
+	AuctionhouseService_Result_FullMethodName   = "/proto.AuctionhouseService/Result"
+	AuctionhouseService_Bid_FullMethodName      = "/proto.AuctionhouseService/Bid"
+	AuctionhouseService_SendData_FullMethodName = "/proto.AuctionhouseService/SendData"
 )
 
 // AuctionhouseServiceClient is the client API for AuctionhouseService service.
@@ -40,6 +41,8 @@ type AuctionhouseServiceClient interface {
 	// Bidders can bid several times, but a bid must be higher than the previous
 	// one(s)
 	Bid(ctx context.Context, in *BidRequest, opts ...grpc.CallOption) (*StatusOfBid, error)
+	// Send data to other server
+	SendData(ctx context.Context, opts ...grpc.CallOption) (AuctionhouseService_SendDataClient, error)
 }
 
 type auctionhouseServiceClient struct {
@@ -68,6 +71,37 @@ func (c *auctionhouseServiceClient) Bid(ctx context.Context, in *BidRequest, opt
 	return out, nil
 }
 
+func (c *auctionhouseServiceClient) SendData(ctx context.Context, opts ...grpc.CallOption) (AuctionhouseService_SendDataClient, error) {
+	stream, err := c.cc.NewStream(ctx, &AuctionhouseService_ServiceDesc.Streams[0], AuctionhouseService_SendData_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &auctionhouseServiceSendDataClient{stream}
+	return x, nil
+}
+
+type AuctionhouseService_SendDataClient interface {
+	Send(*SendDataRequest) error
+	Recv() (*SendDataResponse, error)
+	grpc.ClientStream
+}
+
+type auctionhouseServiceSendDataClient struct {
+	grpc.ClientStream
+}
+
+func (x *auctionhouseServiceSendDataClient) Send(m *SendDataRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *auctionhouseServiceSendDataClient) Recv() (*SendDataResponse, error) {
+	m := new(SendDataResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // AuctionhouseServiceServer is the server API for AuctionhouseService service.
 // All implementations must embed UnimplementedAuctionhouseServiceServer
 // for forward compatibility
@@ -80,6 +114,8 @@ type AuctionhouseServiceServer interface {
 	// Bidders can bid several times, but a bid must be higher than the previous
 	// one(s)
 	Bid(context.Context, *BidRequest) (*StatusOfBid, error)
+	// Send data to other server
+	SendData(AuctionhouseService_SendDataServer) error
 	mustEmbedUnimplementedAuctionhouseServiceServer()
 }
 
@@ -92,6 +128,9 @@ func (UnimplementedAuctionhouseServiceServer) Result(context.Context, *QueryResu
 }
 func (UnimplementedAuctionhouseServiceServer) Bid(context.Context, *BidRequest) (*StatusOfBid, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Bid not implemented")
+}
+func (UnimplementedAuctionhouseServiceServer) SendData(AuctionhouseService_SendDataServer) error {
+	return status.Errorf(codes.Unimplemented, "method SendData not implemented")
 }
 func (UnimplementedAuctionhouseServiceServer) mustEmbedUnimplementedAuctionhouseServiceServer() {}
 
@@ -142,6 +181,32 @@ func _AuctionhouseService_Bid_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuctionhouseService_SendData_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AuctionhouseServiceServer).SendData(&auctionhouseServiceSendDataServer{stream})
+}
+
+type AuctionhouseService_SendDataServer interface {
+	Send(*SendDataResponse) error
+	Recv() (*SendDataRequest, error)
+	grpc.ServerStream
+}
+
+type auctionhouseServiceSendDataServer struct {
+	grpc.ServerStream
+}
+
+func (x *auctionhouseServiceSendDataServer) Send(m *SendDataResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *auctionhouseServiceSendDataServer) Recv() (*SendDataRequest, error) {
+	m := new(SendDataRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // AuctionhouseService_ServiceDesc is the grpc.ServiceDesc for AuctionhouseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -158,6 +223,13 @@ var AuctionhouseService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuctionhouseService_Bid_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SendData",
+			Handler:       _AuctionhouseService_SendData_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "proto/auctionhouse.proto",
 }
