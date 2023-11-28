@@ -1,105 +1,66 @@
-# Description
+# Auction House
 
-== A Distributed Auction System ==
+This is a distributed system for an auction house, implemented in Go using gRPC.
 
-::Introduction::
+## Features
 
-You must implement a **distributed auction system** using replication: a distributed component which handles auctions, and provides operations for bidding and querying the state of an auction. The component must faithfully implement the semantics of the system described below, and must at least be resilient to one (1) crash failure.
+-Streaming RPCs for real-time updates.
 
-::MA Learning Goal::
+- Fault-tolerance using the ring algorithm.
 
-The goal of this mandatory activity is that you learn (by doing) how to use replication to design a service that is resilent to crashes. In particular, it is important that you can recognise what the key issues that may arise are and understand how to deal with them.
+## Usage
 
-::API::
+1. Install the dependencies:
 
-Your system must be implemented as some number of nodes,  running on distinct processes (no threads). Clients direct API requests to *any* node they happen to know (it is up to you to decide how many nodes can be known). Nodes must respond to the following API
+````bash
+go get google.golang.org/grpc
+go get github.com/golang/protobuf/protoc-gen-go
+GitHub Copilot: Sure, here's a basic README for your project:
 
-Method:  bid
+```markdown
+# Auction House
 
-Inputs:  amount (an int)
+This is a distributed system for an auction house, implemented in Go using gRPC.
 
-Outputs: ack
+## Features
 
-Comment: given a bid, returns an outcome among {fail, success or exception}
+- Bidirectional streaming RPCs for real-time updates.
+- Fault-tolerance using the ring algorithm.
+- Client ID flag with random default value.
 
-Method:  result
+## Usage
 
-Inputs:  void
+1. Install the dependencies:
 
-Outputs: outcome
+```bash
+go get google.golang.org/grpc
+go get github.com/golang/protobuf/protoc-gen-go
+````
 
-Comment:  if the auction is over, it returns the result, else highest bid.
+2. Generate Go code from the proto file:
 
-::Semantics::
+```bash
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/auctionhouse.proto
+```
 
-Your component must have the following behaviour, for any reasonable sequentialisation/interleaving of requests to it:
+3. Run the server:
 
-- The first call to "bid" registers the bidder.
-- Bidders can bid several times, but a bid must be higher than the previous one(s).
-- after a predefined timeframe, the highest bidder ends up as the winner of the auction, e.g, after 100 time units from the start of the system.
-- bidders can query the system in order to know the state of the auction.
+You can use the replicamanger to start a server
 
-:: Faults ::
+```bash
+go run replicamanager/replicamanager.go 3001
+```
 
-- Assume a network that has reliable, ordered message transport, where transmissions to non-failed nodes complete within a known time-limit.
-- Your component must be resilient to the failure-stop failure of one (1) node.
+To create more replicas run the command again with a new port which should be the next port after 3001 as we are using the ring algo
 
-# Requirement Engineering
+```bash
+go run replicamanager/replicamanager.go 3002
+```
 
-Implement a distributed auction system:
+4. Run the client:
 
-### Functional Requirements
+Then you can run the client on the same port as the primary server
 
-### R1: Auction Bidding
-
-- **R1.1:** The system must allow registered bidders to place bids.
-- **R1.2:** A bid must be an integer value.
-- **R1.3:** Each bid must be higher than any previous bid made by the same bidder.
-- **R1.4:** The first call to "bid" registers the bidder.
-
-### R2: Auction Outcome
-
-- **R2.1:** The system must provide the current highest bid when requested.
-- **R2.2:** Once the auction is over, the system must declare the highest bidder as the winner.
-- **R2.3:** The auction ends after a predefined time frame (for sake of simplity, auction ends after a total of 5 bids were placed).
-
-### R3: Distributed Processing
-
-- **R3.1:** The system must consist of multiple nodes running on separate processes.
-- **R3.2:** Clients can direct API requests to any node they are aware of.
-
-### Non-Functional Requirements
-
-### R4: Fault Tolerance
-
-- **R4.1:** The system must tolerate the failure-stop failure of one Replica Manager (RM) node, in particular the Primary RM node.
-- **R4.2:** The system should continue functioning with the remaining nodes after a failure.
-
-### R5: Replication
-
-- **R6.1:** Implement a leader-based passive replication.
-- **R6.2:** There should be a primary Replica Manager (RM) and three backup RMs.
-- **R6.3:** The system must handle the failure of the Primary RM and elect a new Primary RM.
-
-### R7: Client-Server Interaction
-
-- **R7.1:** The system must provide a front-end API for client interactions.
-- **R7.2:** Clients should be able to determine the current Primary RM.
-
-### Implementation Requirements
-
-### R8: Development Environment
-
-- **R8.1:** Implement the system in GoLang.
-
-### R9: Documentation and Logging
-
-- **R9.1:** Provide a comprehensive README file with instructions for running the implementation.
-- **R9.2:** Submit logs documenting a correct system run, including handling failures.
-
-### Phase Requirements
-
-### R10: Auction Phases
-
-- **R10.1:** The system must distinctly separate the bidding phase and the outcome query phase.
-- **R10.2:** There must be a clear timestamp or mechanism to differentiate between the two phases.
+```bash
+go run client/client.go 3001
+```
