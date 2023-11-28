@@ -142,33 +142,23 @@ func Help() {
 }
 
 func replicaConnect(primaryPort string) {
-	if primaryPort != replicaPort {
-		conn, err := connectServer(primaryPort)
-		client := protos.NewAuctionhouseServiceClient(conn)
-		activeChat(client)
-		if err != nil {
-			log.Printf("error connecting")
-		}
 
-	} else {
-		client := protos.NewAuctionhouseServiceClient(nil)
+	client := protos.NewAuctionhouseServiceClient(nil)
 
-		for i := 0; i < len(ports); i++ {
-			if isServerLive(ports[i]) {
-				log.Printf("connecting to replica %v", ports[i])
-				conn, err := connectServer(ports[i])
-				client = protos.NewAuctionhouseServiceClient(conn)
-				if err != nil {
-					log.Printf("error connecting")
-				}
-				primaryPort = ports[i]
-				replicaPort = ports[i]
-				break
+	for i := 0; i < len(ports); i++ {
+		if isServerLive(ports[i]) {
+			log.Printf("connecting to replica %v", ports[i])
+			conn, err := connectServer(ports[i])
+			client = protos.NewAuctionhouseServiceClient(conn)
+			log.Printf("connected to replica %v", ports[i])
+			activeChat(client)
+			if err != nil {
+				log.Printf("error connecting")
 			}
+			primaryPort = ports[i]
+			replicaPort = ports[i]
+			break
 		}
-
-		log.Printf("connected to replica %v", primaryPort)
-		activeChat(client)
 	}
 }
 
