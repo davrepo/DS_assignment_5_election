@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	logger "github.com/davrepo/DS_assignment_5_election/logger"
@@ -20,17 +21,30 @@ type Server struct {
 	currentHighestBidsAmount int32
 	isAuctionEnded           bool
 	totalBids                int32
+	id                       string
+}
+
+func main() {
+	logger.ClearLog("log")
+	logger.LogFileInit("main")
+
+	replicaNumber, _ := strconv.Atoi(os.Args[1])
+
+	go Start(int32(replicaNumber), (int32(replicaNumber)))
+
+	bl := make(chan bool)
+	<-bl
 }
 
 func Start(id int32, po int32) {
 	port := po
 	print(port)
-	logger.LogFileInit("replica", id)
 
 	s := &Server{
 		clientBids:     make(map[int32]int32),
 		isAuctionEnded: false,
 		totalBids:      0,
+		id:             fmt.Sprintf("%d", id),
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", po))
@@ -56,6 +70,8 @@ func Start(id int32, po int32) {
 
 func (s *Server) Bid(ctx context.Context, req *protos.BidRequest) (*protos.StatusOfBid, error) {
 
+	log.Printf("Bid request received from client %v", req.ClientId)
+	log.Printf("Bid amount: %v", req.Amount)
 	if s.totalBids == 5 {
 		s.isAuctionEnded = true
 		return &protos.StatusOfBid{
@@ -123,4 +139,18 @@ func ReadPorts() ([]string, error) {
 	}
 
 	return ports, nil
+}
+
+func (s *Server) SendData(req protos.AuctionhouseService_SendDataServer) error {
+
+	data := &protos.SendDataResponse{
+		Amount:    int64(s.currentHighestBidsAmount),
+		BackupIds: s.id,
+	}
+
+	if err := req.Send(data); err != nil {
+		log.Printf("send error %v", err)
+	}
+
+	return nil
 }

@@ -23,6 +23,7 @@ func main() {
 	primaryPort = fmt.Sprintf(":%v", os.Args[1])
 	replicaPort = primaryPort
 	Output(WelcomeMsg())
+	go updateReplica()
 
 	replicaConnect(primaryPort)
 
@@ -156,7 +157,7 @@ func replicaConnect(primaryPort string) {
 				log.Printf("error connecting")
 			}
 			primaryPort = ports[i]
-			replicaPort = ports[i]
+			replicaPort = ports[i+1]
 			break
 		}
 	}
@@ -222,4 +223,39 @@ func isServerLive(port string) bool {
 
 func Output(input string) {
 	log.Println(input)
+}
+
+func updateReplica() {
+	ticker := time.NewTicker(30 * time.Second)
+	for range ticker.C {
+		// Create a connection to the replica
+		conn, err := connectServer(primaryPort)
+
+		if err != nil {
+			log.Printf("Error connecting to replica: %v", err)
+			continue
+		}
+
+		// Create a client
+		client := protos.NewAuctionhouseServiceClient(conn)
+
+		// Create a SendData stream
+		stream, err := client.SendData(context.Background())
+		if err != nil {
+			log.Printf("Error semding SendData stream: %v", err)
+			continue
+		}
+
+		curResult, err := stream.Recv()
+
+		log.Printf("Current result: %v", curResult)
+
+		// Send the current result to the replica
+		// Close the stream
+		stream.CloseSend()
+
+		// Close the connection
+		conn.Close()
+
+	}
 }
