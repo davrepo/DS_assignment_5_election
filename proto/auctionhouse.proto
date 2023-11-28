@@ -46,8 +46,7 @@ enum Status {
 
 // send data to other server - auctionhouse
 message SendDataRequest {
-    int64 amount = 1;
-    string backupIds = 2;
+    
 }
 
 message SendDataResponse {
