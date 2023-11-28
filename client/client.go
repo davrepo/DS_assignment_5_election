@@ -23,7 +23,7 @@ var replicaPort string
 func main() {
 	log.Print(os.Args[1])
 	primaryPort = fmt.Sprintf("%v", os.Args[1])
-	replicaPort = primaryPort
+	replicaPort = "3002"
 	Output(WelcomeMsg())
 	go updateReplica()
 
@@ -280,7 +280,7 @@ func updateReplica() {
 	}
 }
 
-func replicaUpdateAuction(clientReplica protos.AuctionhouseServiceClient, curResult *protos.SendDataResponse) *protos.SendDataResponseToReplica {
+func replicaUpdateAuction(clientReplica protos.AuctionhouseServiceClient, curResult *protos.SendDataResponse) {
 	// Your code for the bid function goes here
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -291,9 +291,8 @@ func replicaUpdateAuction(clientReplica protos.AuctionhouseServiceClient, curRes
 		IsAuctionEnded:           curResult.IsAuctionEnded,
 	})
 	if err != nil {
+
 		log.Fatalf("Error updating replica: %v", err)
 	}
-
-	return res
-
+	fmt.Println(res.Status)
 }

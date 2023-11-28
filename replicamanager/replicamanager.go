@@ -150,7 +150,6 @@ func (s *Server) SendData(req protos.AuctionhouseService_SendDataServer) error {
 	}
 
 	log.Printf("sending data for rpelica to client")
-	log.Printf("current values: %v, %v, %v", s.totalBids, s.currentHighestBidsAmount, s.isAuctionEnded)
 
 	if err := req.Send(data); err != nil {
 		log.Printf("send error %v", err)
