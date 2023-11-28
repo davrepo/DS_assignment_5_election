@@ -144,8 +144,9 @@ func ReadPorts() ([]string, error) {
 func (s *Server) SendData(req protos.AuctionhouseService_SendDataServer) error {
 
 	data := &protos.SendDataResponse{
-		Amount:    int64(s.currentHighestBidsAmount),
-		BackupIds: s.id,
+		TotalBids:               s.totalBids,
+		CurrentHighestBidsAmount: s.currentHighestBidsAmount,
+		IsAuctionEnded:           s.isAuctionEnded,
 	}
 
 	if err := req.Send(data); err != nil {
@@ -153,4 +154,16 @@ func (s *Server) SendData(req protos.AuctionhouseService_SendDataServer) error {
 	}
 
 	return nil
+}
+
+
+func (s *Server) SendDataToReplica(ctx context.Context, in *protos.GetDataRequestToReplica) (*protos.SendDataResponseToReplica, error) {
+
+	s.totalBids = in.TotalBids
+	s.currentHighestBidsAmount = in.CurrentHighestBidsAmount
+	s.isAuctionEnded = in.IsAuctionEnded
+
+	return &protos.SendDataResponseToReplica{
+		Status:     protos.Status_REPLICA_RETURN,
+	}, nil
 }

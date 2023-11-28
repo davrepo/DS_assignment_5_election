@@ -24,9 +24,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AuctionhouseService_Result_FullMethodName   = "/proto.AuctionhouseService/Result"
-	AuctionhouseService_Bid_FullMethodName      = "/proto.AuctionhouseService/Bid"
-	AuctionhouseService_SendData_FullMethodName = "/proto.AuctionhouseService/SendData"
+	AuctionhouseService_Result_FullMethodName            = "/proto.AuctionhouseService/Result"
+	AuctionhouseService_Bid_FullMethodName               = "/proto.AuctionhouseService/Bid"
+	AuctionhouseService_SendData_FullMethodName          = "/proto.AuctionhouseService/SendData"
+	AuctionhouseService_SendDataToReplica_FullMethodName = "/proto.AuctionhouseService/SendDataToReplica"
 )
 
 // AuctionhouseServiceClient is the client API for AuctionhouseService service.
@@ -43,6 +44,7 @@ type AuctionhouseServiceClient interface {
 	Bid(ctx context.Context, in *BidRequest, opts ...grpc.CallOption) (*StatusOfBid, error)
 	// Send data to other server
 	SendData(ctx context.Context, opts ...grpc.CallOption) (AuctionhouseService_SendDataClient, error)
+	SendDataToReplica(ctx context.Context, in *GetDataRequestToReplica, opts ...grpc.CallOption) (*SendDataResponseToReplica, error)
 }
 
 type auctionhouseServiceClient struct {
@@ -81,7 +83,7 @@ func (c *auctionhouseServiceClient) SendData(ctx context.Context, opts ...grpc.C
 }
 
 type AuctionhouseService_SendDataClient interface {
-	Send(*SendDataRequest) error
+	Send(*GetDataRequest) error
 	Recv() (*SendDataResponse, error)
 	grpc.ClientStream
 }
@@ -90,7 +92,7 @@ type auctionhouseServiceSendDataClient struct {
 	grpc.ClientStream
 }
 
-func (x *auctionhouseServiceSendDataClient) Send(m *SendDataRequest) error {
+func (x *auctionhouseServiceSendDataClient) Send(m *GetDataRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
@@ -100,6 +102,15 @@ func (x *auctionhouseServiceSendDataClient) Recv() (*SendDataResponse, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *auctionhouseServiceClient) SendDataToReplica(ctx context.Context, in *GetDataRequestToReplica, opts ...grpc.CallOption) (*SendDataResponseToReplica, error) {
+	out := new(SendDataResponseToReplica)
+	err := c.cc.Invoke(ctx, AuctionhouseService_SendDataToReplica_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // AuctionhouseServiceServer is the server API for AuctionhouseService service.
@@ -116,6 +127,7 @@ type AuctionhouseServiceServer interface {
 	Bid(context.Context, *BidRequest) (*StatusOfBid, error)
 	// Send data to other server
 	SendData(AuctionhouseService_SendDataServer) error
+	SendDataToReplica(context.Context, *GetDataRequestToReplica) (*SendDataResponseToReplica, error)
 	mustEmbedUnimplementedAuctionhouseServiceServer()
 }
 
@@ -131,6 +143,9 @@ func (UnimplementedAuctionhouseServiceServer) Bid(context.Context, *BidRequest) 
 }
 func (UnimplementedAuctionhouseServiceServer) SendData(AuctionhouseService_SendDataServer) error {
 	return status.Errorf(codes.Unimplemented, "method SendData not implemented")
+}
+func (UnimplementedAuctionhouseServiceServer) SendDataToReplica(context.Context, *GetDataRequestToReplica) (*SendDataResponseToReplica, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendDataToReplica not implemented")
 }
 func (UnimplementedAuctionhouseServiceServer) mustEmbedUnimplementedAuctionhouseServiceServer() {}
 
@@ -187,7 +202,7 @@ func _AuctionhouseService_SendData_Handler(srv interface{}, stream grpc.ServerSt
 
 type AuctionhouseService_SendDataServer interface {
 	Send(*SendDataResponse) error
-	Recv() (*SendDataRequest, error)
+	Recv() (*GetDataRequest, error)
 	grpc.ServerStream
 }
 
@@ -199,12 +214,30 @@ func (x *auctionhouseServiceSendDataServer) Send(m *SendDataResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *auctionhouseServiceSendDataServer) Recv() (*SendDataRequest, error) {
-	m := new(SendDataRequest)
+func (x *auctionhouseServiceSendDataServer) Recv() (*GetDataRequest, error) {
+	m := new(GetDataRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func _AuctionhouseService_SendDataToReplica_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDataRequestToReplica)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuctionhouseServiceServer).SendDataToReplica(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuctionhouseService_SendDataToReplica_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuctionhouseServiceServer).SendDataToReplica(ctx, req.(*GetDataRequestToReplica))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // AuctionhouseService_ServiceDesc is the grpc.ServiceDesc for AuctionhouseService service.
@@ -221,6 +254,10 @@ var AuctionhouseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Bid",
 			Handler:    _AuctionhouseService_Bid_Handler,
+		},
+		{
+			MethodName: "SendDataToReplica",
+			Handler:    _AuctionhouseService_SendDataToReplica_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -42,19 +42,31 @@ enum Status {
   EXCEPTION = 2;
   AUCTION_ENDED = 3;
   AUCTION_ACTIVE = 4;
+  REPLICA_RETURN = 5;
 }
 
 // send data to other server - auctionhouse
-message SendDataRequest {
-    int64 amount = 1;
-    string backupIds = 2;
+message GetDataRequest {
 }
 
 
 message SendDataResponse {
-    int64 amount = 1;
-    string backupIds = 2;
+  int32 totalBids = 1;
+  int32 currentHighestBidsAmount = 2;
+  bool isAuctionEnded = 3;
 }
+
+message GetDataRequestToReplica {
+  int32 totalBids = 1;
+  int32 currentHighestBidsAmount = 2;
+  bool isAuctionEnded = 3;
+}
+
+
+message SendDataResponseToReplica {
+  Status status = 1;
+}
+
 
 service AuctionhouseService {
   // result: send stream of qmgs bc client can ask at any point of time
@@ -68,6 +80,9 @@ service AuctionhouseService {
   rpc Bid( BidRequest) returns (StatusOfBid) {
   }
   // Send data to other server
-  rpc SendData(stream SendDataRequest) returns (stream SendDataResponse) {
+  rpc SendData(stream GetDataRequest) returns (stream SendDataResponse) {
+  } // Broadcast -- subcribe - server -> client via msgQueue
+
+  rpc SendDataToReplica( GetDataRequestToReplica) returns ( SendDataResponseToReplica) {
   } // Broadcast -- subcribe - server -> client via msgQueue
 }
