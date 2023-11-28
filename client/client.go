@@ -173,27 +173,6 @@ func Instrc() string {
 	A certain amount of time is set off for clients to bid on an item.
 	The time on the items are NOT displayed to the clients, so if you wanna bid do it fast.
 
-	INPUTS
-	----------------------------------------------------------------------------------------------------------------
-		Bidding on an item: 
-			To bid on an item just write the amount in the terminal, followed by enter, the bid must be a valid int.
-			     bid <bid amount>
-		Information about current item:
-			To ask the auctioneer what item you are bidding on and what the highest bid is please write:
-				query
-			in the terminal, followed by enter.
-
-		Quitting:
-			To quit the auction please write:
-				quit
-			in the terminal, followed by enter.
-
-		Help:
-			To get the input explaination again please write:
-				help
-			in the terminal, followed by enter.
-	------------------------------------------------------------------------------------------------------------------
-
 		`
 }
 
