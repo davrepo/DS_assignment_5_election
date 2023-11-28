@@ -144,10 +144,13 @@ func ReadPorts() ([]string, error) {
 func (s *Server) SendData(req protos.AuctionhouseService_SendDataServer) error {
 
 	data := &protos.SendDataResponse{
-		TotalBids:               s.totalBids,
+		TotalBids:                s.totalBids,
 		CurrentHighestBidsAmount: s.currentHighestBidsAmount,
 		IsAuctionEnded:           s.isAuctionEnded,
 	}
+
+	log.Printf("sending data for rpelica to client")
+	log.Printf("current values: %v, %v, %v", s.totalBids, s.currentHighestBidsAmount, s.isAuctionEnded)
 
 	if err := req.Send(data); err != nil {
 		log.Printf("send error %v", err)
@@ -156,14 +159,16 @@ func (s *Server) SendData(req protos.AuctionhouseService_SendDataServer) error {
 	return nil
 }
 
-
 func (s *Server) SendDataToReplica(ctx context.Context, in *protos.GetDataRequestToReplica) (*protos.SendDataResponseToReplica, error) {
+
+	log.Printf("received data from primary")
 
 	s.totalBids = in.TotalBids
 	s.currentHighestBidsAmount = in.CurrentHighestBidsAmount
 	s.isAuctionEnded = in.IsAuctionEnded
 
+	log.Printf("current values: %v, %v, %v", s.totalBids, s.currentHighestBidsAmount, s.isAuctionEnded)
 	return &protos.SendDataResponseToReplica{
-		Status:     protos.Status_REPLICA_RETURN,
+		Status: protos.Status_REPLICA_RETURN,
 	}, nil
 }
