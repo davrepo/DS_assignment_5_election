@@ -20,7 +20,7 @@ var replicaPort string
 
 func main() {
 	log.Print(os.Args[1])
-	primaryPort = fmt.Sprintf(":%v", os.Args[1])
+	primaryPort = fmt.Sprintf("%v", os.Args[1])
 	replicaPort = primaryPort
 	Output(WelcomeMsg())
 	go updateReplica()
@@ -94,7 +94,7 @@ func activeChat(client protos.AuctionhouseServiceClient) {
 
 func bid(client protos.AuctionhouseServiceClient, amount int32) {
 	// Your code for the bid function goes here
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	res, err := client.Bid(ctx, &protos.BidRequest{
@@ -113,7 +113,7 @@ func bid(client protos.AuctionhouseServiceClient, amount int32) {
 
 func result(client protos.AuctionhouseServiceClient) (*protos.ResponseToQuery, error) {
 	// Your code for the bid function goes here
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	res, err := client.Result(ctx, &protos.QueryResult{})
@@ -226,7 +226,7 @@ func Output(input string) {
 }
 
 func updateReplica() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for range ticker.C {
 		// Create a connection to the replica
 		conn, err := connectServer(primaryPort)
@@ -253,9 +253,53 @@ func updateReplica() {
 		// Send the current result to the replica
 		// Close the stream
 		stream.CloseSend()
-
+		
 		// Close the connection
 		conn.Close()
 
+		//Replica 
+		// Create a connection to the replica
+		connReplica, err := connectServer(replicaPort)
+
+		if err != nil {
+			log.Printf("Error connecting to replica: %v", err)
+			continue
+		}
+
+		// Create a client
+		clientReplica := protos.NewAuctionhouseServiceClient(connReplica)
+
+
+		log.Printf("Current result: %v", curResult)
+
+		// Send the current result to the replica
+		// Close the stream
+		stream.CloseSend()
+		
+		// Close the connection
+		conn.Close()
+
+		replicaUpdateAuction(clientReplica, curResult)
+
 	}
 }
+
+func replicaUpdateAuction(clientReplica protos.AuctionhouseServiceClient, curResult *protos.SendDataResponse ) {
+	// Your code for the bid function goes here
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := clientReplica.SendDataToReplica(ctx, &protos.GetDataRequestToReplica{
+		TotalBids:               curResult.TotalBids,
+		CurrentHighestBidsAmount: curResult.CurrentHighestBidsAmount,
+		IsAuctionEnded:           curResult.IsAuctionEnded,
+	})
+	if err != nil {
+		log.Fatalf("Error updating replica: %v", err)
+	}
+
+	log.Print("Replica status: ", res.Status)
+
+}
+
+
