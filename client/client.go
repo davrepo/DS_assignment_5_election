@@ -6,11 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"sync"
 	"time"
-
-	"github.com/davrepo/DS_assignment_5_election/database"
-	server "github.com/davrepo/DS_assignment_5_election/replicamanager"
 
 	protos "github.com/davrepo/DS_assignment_5_election/proto"
 	"github.com/manifoldco/promptui"
@@ -18,15 +14,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var mu sync.Mutex
+var ports = [4]string{"3001", "3002", "3003", "3004"}
+var primaryPort string
+var replicaPort string
 
 func main() {
 	log.Print(os.Args[1])
-	port := fmt.Sprintf(":%v", os.Args[1])
-
+	primaryPort = fmt.Sprintf(":%v", os.Args[1])
+	replicaPort = primaryPort
 	Output(WelcomeMsg())
 
-	replicaConnect(port)
+	replicaConnect(primaryPort)
 
 	//______________________
 
@@ -35,10 +33,10 @@ func main() {
 }
 
 func connectServer(port string) (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
-		return nil, err
+		log.Printf("could not connect: %v", err)
 	}
 
 	//--------------------
@@ -87,7 +85,6 @@ func activeChat(client protos.AuctionhouseServiceClient) {
 			result(client)
 		} else if input == "leave" {
 			active = false
-			database.TruncateCSV()
 			os.Exit(3)
 		}
 
@@ -145,11 +142,7 @@ func Help() {
 }
 
 func replicaConnect(primaryPort string) {
-	ports, err := server.ReadPorts()
-	if err != nil {
-		print(err)
-	}
-	if primaryPort != "" {
+	if primaryPort != replicaPort {
 		conn, err := connectServer(primaryPort)
 		client := protos.NewAuctionhouseServiceClient(conn)
 		activeChat(client)
@@ -158,20 +151,24 @@ func replicaConnect(primaryPort string) {
 		}
 
 	} else {
-		for _, v := range ports {
-			if isServerLive(v) {
-				log.Printf(v)
-				conn, err := connectServer(v)
-				client := protos.NewAuctionhouseServiceClient(conn)
+		client := protos.NewAuctionhouseServiceClient(nil)
+
+		for i := 0; i < len(ports); i++ {
+			if isServerLive(ports[i]) {
+				log.Printf("connecting to replica %v", ports[i])
+				conn, err := connectServer(ports[i])
+				client = protos.NewAuctionhouseServiceClient(conn)
 				if err != nil {
 					log.Printf("error connecting")
 				}
-				activeChat(client)
-			} else {
-				log.Printf("trying another")
+				primaryPort = ports[i]
+				replicaPort = ports[i]
+				break
 			}
-
 		}
+
+		log.Printf("connected to replica %v", primaryPort)
+		activeChat(client)
 	}
 }
 
@@ -208,28 +205,29 @@ func Instrc() string {
 
 // this method is used to ping the server at see if it is active if not try next
 func isServerLive(port string) bool {
-	mu.Lock()
-	defer mu.Unlock()
 	// Connect to the server
 	conn, err := connectServer(port)
 	if err != nil {
 		log.Printf("could no connect")
+		return false
 	}
-	defer conn.Close()
 
 	// Create a new client
 	client := protos.NewAuctionhouseServiceClient(conn)
 
 	// Call a simple method from the service
 	_, err = result(client)
+
 	if err != nil {
-		// Handle the error
 		log.Printf("The server is on " + port + " is down")
+
 		return false
+	} else {
+		log.Printf("The server is on " + port + " is up")
+
+		return true
 	}
 
-	// If the method returns successfully, the server is live
-	return true
 }
 
 func Output(input string) {

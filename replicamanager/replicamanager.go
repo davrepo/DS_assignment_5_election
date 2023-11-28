@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/davrepo/DS_assignment_5_election/database"
 	logger "github.com/davrepo/DS_assignment_5_election/logger"
 	protos "github.com/davrepo/DS_assignment_5_election/proto"
 
@@ -67,8 +66,6 @@ func (s *Server) Bid(ctx context.Context, req *protos.BidRequest) (*protos.Statu
 		s.totalBids += 1
 
 		s.clientBids[req.ClientId] = req.Amount
-		database.WriteToCSV(fmt.Sprintf("%d", req.Amount))
-
 		if req.Amount > s.currentHighestBidsAmount {
 			s.currentHighestBidsAmount = req.Amount
 
@@ -117,7 +114,11 @@ func ReadPorts() ([]string, error) {
 
 	var ports []string
 	lines := strings.Split(string(data), "\n")
+
 	for _, line := range lines {
+		log.Println(line)
+		strings.TrimSpace(line)
+
 		ports = append(ports, line)
 	}
 

@@ -22,15 +22,18 @@ message BidRequest {
 message ResponseToQuery {
   Status status = 1;
   int32 highestBid = 2;
+  string clientId = 3;
 }
 
 // Message for prompting asking for highest bidder
 message QueryResult {}
 
+
 // Was bid successful?
 message StatusOfBid {
   Status status = 1;
   int32 highestBid = 2;
+  repeated string ports = 3;
 }
 
 enum Status {
@@ -40,6 +43,8 @@ enum Status {
   AUCTION_ENDED = 3;
   AUCTION_ACTIVE = 4;
 }
+
+
 
 service AuctionhouseService {
   // result: send stream of qmgs bc client can ask at any point of time

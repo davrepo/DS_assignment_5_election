@@ -9,13 +9,16 @@ import (
 	replica "github.com/davrepo/DS_assignment_5_election/replicamanager"
 )
 
+
+
+
 func main() {
 	logger.ClearLog("log")
 	logger.LogFileInit("main")
 
 	replicaNumber, _ := strconv.Atoi(os.Args[1])
 
-	go replica.Start(int32(replicaNumber), (3000 + int32(replicaNumber)))
+	go replica.Start(int32(replicaNumber), (int32(replicaNumber)))
 
 	bl := make(chan bool)
 	<-bl
